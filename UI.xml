@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UI>
+  <Include file="ColorSets.xml"/>
+  <Include file="ImageSets.xml"/>
+  <Include file="Fonts.xml"/>
+  <Include file="Styles.xml"/>
+  <Include file="Hotkeys.xml"/>
+  <Include file="Menu.xml"/>
+  <Script file="UI.lua"/>
+  <Variable name="Project.PrinterList" value="PfuschMaker,HTRD.006,R1"/>
+  <Variable name="Project.infillType" value="auto"/>
+  <!-- TODO: Refactor when these properties are added to the Material profile
+  <Variable name="Project.nozzleTemperature" value="220"/><Variable name="Project.bedTemperature" value="60"/>-->
+  <!-- Note: DO NOT name random containers! Name only dialogs and individual controls. -->
+  <!-- When the app needs to interact with controls, all named parents have to be listed, i.e. 'Dialog.Container1.Container2.Container3.ButtonXYZ' -->
+  <!-- However, if the containers are unnamed, the app can simply refer to the control as 'Dialog.ButtonXYZ', no matter how deep in the hierarchy. -->
+  <!-- This makes it possible to change the layout, without changing the C++ code. -->
+  <Panel style="BackgroundPanel,TopLeft,FullSize">
+    <!-- Header -->
+    <Grid height="48" rows="1" stretchColumn="-2" style="ForegroundPanel,TopLeft,FullSize">
+      <ButtonBar icons="IconPlusMedium" labels="Untitled Print Job,[0]" left="16" name="ProjectTabBar" onTabClose="Application.ProjectClose()" selectedItem="0" style="TextTabBar,FullSize" variable="$Application.CurrentProject"/>
+      <Panel background="TopRightLogo" centerv="50%" right="12"/>
+    </Grid>
+    <!-- Main 3D Window -->
+    <ProjectDisplay background="GRAY100" bottom="0" deletedSupportSites="TOMATO" deselected="MATERIAL" errorSupportSites="LEMON" grid="GRAY600" left="0" name="ProjectDisplay" normalSupportSites="GRAY50" outOfBoundsGrid="TOMATO" outOfBoundsTint="TOMATO@75%" right="0,280:280" selected="B500" supports="MATERIAL|GRAY50@60%" top="48">
+      <Environment diffuse="IBL/gradient_softSquare_D.dds" exposure="0.5" name="Gradient Soft Square" specular="IBL/gradient_softSquare_S.dds"/>
+      <Environment diffuse="IBL/TopWindowD.dds" exposure="0" name="Top Window" specular="IBL/TopWindowS.dds"/>
+      <Button bottom="16" icon="IconPlusBig" left="16" name="PlusButton" onClick="Application.FileOpen()" style="CircularButton"/>
+      <!-- Global Commands-->
+      <Command name="ProjectContentsChanged" script="Lua.ProjectContentsChanged()"/>
+      <!-- RepairModals Commands-->
+      <Command name="OnMeshErrors" script="Lua.OnMeshErrors($1, $2)"/>
+      <Command name="OnMeshRejected" script="Lua.OnMeshRejected($1)"/>
+      <Command name="OnVoxelizationError" script="Lua.OnVoxelizationError($1)"/>
+      <!-- Background Task Spinner -->
+      <ProgressBar bottom="0" height="6" left="0" name="BackgroundTaskSpinner" style="ProgressSpinner" visible="false" width="100%">
+        <Command name="BeginBackgroundTask" script=" $Parent.PoweredBy.Hide(0.3); $Parent.BackgroundTaskText.SetText($1); $Parent.BackgroundTaskText.Show(0.3); FDMSupportSettings.DisableEditing(); Show(0.3);"/>
+        <Command name="SetBackgroundTaskText" script="$Parent.BackgroundTaskText.SetText($1)"/>
+        <Command name="EndBackgroundTask" script=" $Parent.PoweredBy.Show(0.3); $Parent.BackgroundTaskText.Hide(0.3); Hide(0.3);"/>
+      </ProgressBar>
+      <Label bottom="16" centerh="50%" name="BackgroundTaskText" style="BackgroundTask" text="Working..." visible="false"/>
+      <TextBox name="Pill" position="OffScreen" style="Pill">
+        <Position centerh="50%" height="24" name="OnScreen" top="32" width="125"/>
+        <Position bottom="100%" centerh="50%" height="24" name="OffScreen" width="125"/>
+      </TextBox>
+      <!-- Progress Dialog -->
+      <Panel background="ModalGrayOut" name="ProgressDialog" style="TopLeft,FullSize" visible="false">
+        <Command name="BeginProgress" script=" Show(0.3); Panel.MoveToPosition(Bottom); Panel.MoveToPosition(Center, 0.3, EaseOutCubic); Panel.Show(0.3); Panel.Text.SetText($1); Panel.Text.Show(0.3); Panel.Percent.Show(0.3); Panel.Percent.SetText($3); Panel.ProgressBar.SetProgress($2); Panel.ProgressBar.Show(0.3); $Root.Inspector.$Parent.Disable(); $Root.ProjectTabBar.Disable();"/>
+        <Command name="SetProgress" script=" Panel.ProgressBar.SetProgress($1); Panel.Percent.SetText($2);"/>
+        <Command name="SetProgressText" script="Panel.Text.SetText($1);"/>
+        <Command name="EndProgress" script=" Hide(0.3); Panel.MoveToPosition(Top, 0.3, EaseInCubic); Panel.Hide(0.3); Panel.Text.Hide(0.3); Panel.Percent.SetText(100%); Panel.Percent.Hide(0.3); Panel.ProgressBar.SetProgress(1); Panel.ProgressBar.Hide(0.3); $Root.Inspector.$Parent.Enable(); $Root.ProjectTabBar.Enable();"/>
+        <Command name="ShowAbortButton" script="Panel.MoveToPosition(CenterAbort, 0.3, EaseOutCubic);"/>
+        <Command name="HideAbortButton" script="Panel.MoveToPosition(Center, 0.3, EaseOutCubic);"/>
+        <Panel background="PanelBackground" name="Panel" position="Bottom" visible="false">
+          <Position centerh="50%" centerv="50%" height="76" name="Center" width="280"/>
+          <Position centerh="50%" centerv="50%" height="76" name="CenterAbort" width="384"/>
+          <Position centerh="50%" centerv="75%" height="76" name="Bottom" width="280"/>
+          <Position centerh="50%" centerv="25%" height="76" name="Top" width="280"/>
+          <Panel bottom="0" left="0" top="0" width="280">
+            <Label left="24" name="Text" style="Label" top="24" visible="false"/>
+            <Label alignh="right" name="Percent" right="24" style="Label" top="24" visible="false"/>
+            <ProgressBar bottom="24" centerh="50%" height="4" name="ProgressBar" style="ProgressBar" visible="false" width="-48"/>
+          </Panel>
+          <Button left="280" onClick="Application.AbortCurrentAction()" style="ActionButton" text="Cancel" top="24" width="80"/>
+        </Panel>
+      </Panel>
+    </ProjectDisplay>
+    <!-- Right Side Panel -->
+    <Panel height="-100" right="0" scrollBarV="ScrollBar" top="50" width="0,280:280">
+      <Grid cellSpacing="0,2" columns="1" stretchRow="-1">
+        <!-- Printer Settings -->
+        <Grid columns="1" height="160" name="PrinterSettings" padding="16,0,16,0" style="ForegroundPanel,TopLeft,FullSize">
+          <TextBox style="RightPanelTitle" text="Printer"/>
+          <ComboBox name="Printer" onChange="Lua.SelectPrinter($Project.Printer.Model);Lua.UpdateSettings();" style="SmallComboButton" variable="Project.Printer.Model" width="100%"/>
+          <TextBox style="RightPanelTitle" text="Material"/>
+          <ComboBox name="Material" onChange="Project.SetMaterial($Project.Printer.Material);Lua.UpdateSettings();" style="SmallComboButton" variable="Project.Printer.Material" width="100%"/>
+        </Grid>
+        <!-- Basic Printer Settings -->
+        <Panel name="BasicPrinterSettings" position="Collapsed" style="ForegroundPanel">
+          <Position height="48" name="Collapsed" width="100%"/>
+          <Position height="288" name="Expanded" width="100%"/>
+          <Position height="624" name="Advanced" width="100%"/>
+          <Position height="784" name="Retraction" width="100%"/>
+          <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseMenu(BasicPrinterSettings)" onTurnOn="Lua.OpenMenu(BasicPrinterSettings)" style="RightPanelSectionToggle" text="Basic Printer Settings"/>
+          <Slider left="16" max="0.5" min="0.05" name="layerThickness" onEndChanging="Lua.UpdateLayerThickness($Project.layerThickness)" precision="2" style="Slider" text="Layer Thickness" top="48" unit=" mm" variable="Project.layerThickness" width="-32"/>
+          <Slider left="16" max="1.0" min="0.1" name="extruderDiameter" onEndChanging="Lua.UpdateMaterialSetting(extruderDiameter)" precision="1" style="SliderClean" text="Extruded Diameter" top="96" unit="mm" variable="Project.extruderDiameter" width="-32"/>
+          <Slider left="16" max="2.0" min="0.5" name="flowRate" onEndChanging="Lua.UpdateMaterialSetting(flowRate)" precision="2" style="SliderClean" text="Flow Rate" top="144" unit=" " variable="Project.flowRate" width="-32"/>
+          <Slider left="16" max="3200" min="100" name="normalSpeed" onEndChanging="Lua.UpdateMaterialSetting(normalSpeed)" precision="0" style="SliderClean" text="Printing Speed" top="192" unit=" mm/min" variable="Project.normalSpeed" width="-32"/>
+          <Toggle left="16" name="AdvancedSettingsToggle" on="false" onTurnOff="$Parent.Advanced.RetractionToggle.TurnOff(); $Parent.MoveToPosition(Expanded, 0.3, EaseOutCubic);" onTurnOn="$Parent.MoveToPosition(Advanced, 0.3, EaseOutCubic);" style="Toggle" top="248"/>
+          <Label alignv="center" left="48" style="RightPanelText" text="Advanced" top="260"/>
+          <Panel name="Advanced" style="TopLeft,FullSize" top="288">
+            <Slider left="16" max="5000" min="100" name="rapidSpeed" onEndChanging="Lua.UpdateMaterialSetting(rapidSpeed)" precision="0" style="SliderClean" text="Movement Speed" top="0" unit=" mm/min" variable="Project.rapidSpeed" width="-32"/>
+            <Slider left="16" max="5000" min="100" name="skinSpeed" onEndChanging="Lua.UpdateMaterialSetting(skinSpeed)" precision="0" style="SliderClean" text="Skin Speed" top="48" unit=" mm/min" variable="Project.skinSpeed" width="-32"/>
+            <Slider left="16" max="2.0" min="0.1" name="firstLayerSpeed" onEndChanging="Lua.UpdateMaterialSetting(firstLayerSpeed)" precision="1" style="SliderClean" text="First Layer Speed Multiplier" top="96" variable="Project.firstLayerSpeed" width="-32"/>
+            <Slider left="16" max="3.0" min="0.5" name="firstLayerThickness" onEndChanging="Lua.UpdateMaterialSetting(firstLayerThickness)" precision="1" style="SliderClean" text="First Layer Thickness" top="144" unit=" mm" variable="Project.firstLayerThickness" width="-32"/>
+            <Slider left="16" max="1.5" min="0.1" name="firstLayerFlowRate" onEndChanging="Lua.UpdateMaterialSetting(firstLayerFlowRate)" precision="1" style="SliderClean" text="First Layer Flowrate" top="192" unit=" [-]" variable="Project.firstLayerFlowRate" width="-32"/>
+            <Slider left="16" max="1.0" min="0.1" name="flowRateSupport" onEndChanging="Lua.UpdateMaterialSetting(flowRateSupport)" precision="1" style="SliderClean" text="Flowrate Support" top="240" variable="Project.flowRateSupport" width="-32"/>
+            <Toggle left="16" name="RetractionToggle" on="false" onTurnOff="$Parent.$Parent.MoveToPosition(Advanced, 0.3, EaseOutCubic);" onTurnOn="$Parent.$Parent.MoveToPosition(Retraction, 0.3, EaseOutCubic);" style="Toggle" top="296"/>
+            <Label alignv="center" left="48" style="RightPanelText" text="Retraction" top="308"/>
+            <Panel name="Retraction" style="TopLeft,FullSize" top="336">
+              <Slider left="16" max="3.0" min="0.1" name="retractionAmount" onEndChanging="Lua.UpdateMaterialSetting(retractionAmount)" precision="1" style="SliderClean" text="Retraction Amount" top="0" unit=" mm" variable="Project.retractionAmount" width="-32"/>
+              <Slider left="16" max="5000" min="100" name="retractionSpeed" onEndChanging="Lua.UpdateMaterialSetting(retractionSpeed)" precision="1" style="SliderClean" text="Retraction Speed" top="48" unit=" mm/min" variable="Project.retractionSpeed" width="-32"/>
+              <Slider left="16" max="5.0" min="0.0" name="retractionLift" onEndChanging="Lua.UpdateMaterialSetting(retractionLift)" precision="1" style="SliderClean" text="Retraction Lift" top="96" unit=" mm" variable="Project.retractionLift" width="-32"/>
+            </Panel>
+          </Panel>
+        </Panel>
+        <!-- Temperature Settings -->
+        <Panel name="TemperatureSettings" position="Collapsed" style="ForegroundPanel">
+          <Position height="48" name="Collapsed" width="100%"/>
+          <Position height="256" name="Expanded" width="100%"/>
+          <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseMenu(TemperatureSettings)" onTurnOn="Lua.OpenMenu(TemperatureSettings)" style="RightPanelSectionToggle" text="Temperature"/>
+          <Slider left="16" max="450" min="30" name="nozzleTemperature" onEndChanging="Lua.UpdateMaterialSetting(nozzleTemperature)" precision="0" style="SliderClean" text="Nozzle Temperature" top="48" unit=" °C" variable="Project.nozzleTemperature" width="-32"/>
+          <Slider left="16" max="260" min="30" name="bedTemperature" onEndChanging="Lua.UpdateMaterialSetting(bedTemperature)" precision="0" style="SliderClean" text="Bed Temperature" top="96" unit=" °C" variable="Project.bedTemperature" width="-32"/>
+          <Slider left="16" max="250" min="30" name="chamberTemperature" onEndChanging="Lua.UpdateMaterialSetting(chamberTemperature)" precision="1" style="SliderClean" text="Chamber Temperature" top="144" unit=" °C" variable="Project.chamberTemperature" width="-32"/>
+          <Slider left="16" max="250" min="30" name="coolingTemperature" onEndChanging="Lua.UpdateMaterialSetting(coolingTemperature)" precision="1" style="SliderClean" text="Cooling Temperature" top="192" unit=" °C" variable="Project.coolingTemperature" width="-32"/>
+        </Panel>
+        <!-- FDM Support Settings -->
+        <Panel name="FDMSupportSettings" position="Collapsed" style="ForegroundPanel">
+          <Position height="48" name="Collapsed" width="100%"/>
+          <Position height="264" name="Expanded" width="100%"/>
+          <Position height="408" name="Skirt" width="100%"/>
+          <!--  <Position height="408" name="Touch" width="100%"/>-->
+          <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseMenu(FDMSupportSettings)" onTurnOn="Lua.OpenMenu(FDMSupportSettings)" style="RightPanelSectionToggle" text="Support"/>
+          <Panel height="32" left="16" name="GenerateSupport" top="48" width="100%">
+            <Toggle centerv="50%" left="0" on="false" onTurnOff="Project.OverrideMaterialProperty(supportOverhangAngle, 0)" onTurnOn="Project.OverrideMaterialProperty(supportOverhangAngle,$Project.supportOverhangAngle)" style="Toggle"/>
+            <Label alignv="center" left="32" style="RightPanelText" text="Generate" top="50%"/>
+          </Panel>
+          <Slider default="50" left="16" max="90" min="0" name="supportOverhangAngle" onEndChanging="Lua.UpdateMaterialSetting(supportOverhangAngle)" precision="0" style="SliderClean" text="Overhang Angle" top="88" unit="°" variable="Project.supportOverhangAngle" width="-32"/>
+          <Slider default="15" left="16" max="90" min="0" name="supportInfill" onEndChanging="Lua.UpdateMaterialSetting(supportInfill)" precision="0" style="SliderClean" text="Support Infill" top="136" unit="%" variable="Project.supportInfill" width="-32"/>
+          <Panel height="32" left="16" name="InternalSupports" top="184" width="100%">
+            <Toggle centerv="50%" left="0" on="false" onTurnOff="Project.OverrideMaterialProperty(supportInternal, false); " onTurnOn="Project.OverrideMaterialProperty(supportInternal, true)" style="Toggle"/>
+            <Label alignv="center" left="32" style="RightPanelText" text="Internal Supports" top="50%"/>
+          </Panel>
+          <Toggle left="16" name="SkirtSettingsToggle" on="false" onTurnOff="$Parent.MoveToPosition(Expanded, 0.3, EaseOutCubic);" onTurnOn="$Parent.MoveToPosition(Skirt, 0.3, EaseOutCubic);" style="Toggle" top="224"/>
+          <Label alignv="center" left="48" style="RightPanelText" text="Skirt" top="236"/>
+          <Panel name="Skirt" style="TopLeft" top="264">
+            <Slider left="16" max="20" min="0" name="skirtLayers" onEndChanging="Lua.UpdateMaterialSetting(skirtLayers)" precision="0" style="SliderClean" text="Skirt Layers" top="0" unit=" [-]" variable="Project.skirtLayers" width="-32"/>
+            <Slider left="16" max="20" min="0" name="skirtOffset" onEndChanging="Lua.UpdateMaterialSetting(skirtOffset)" precision="2" style="SliderClean" text="Skirt Offset" top="48" unit=" mm" variable="Project.skirtOffset" width="-32"/>
+            <Slider left="16" max="2.0" min="0.1" name="skirtWidth" onEndChanging="Lua.UpdateMaterialSetting(skirtWidth)" precision="1" style="SliderClean" text="Skirt Width" top="96" variable="Project.skirtWidth" width="-32"/>
+          </Panel>
+          <!--      <Toggle name="TouchSupportToggle" on="false" top="264" left="16" onTurnOff="$Parent.MoveToPosition(Expanded, 0.3, EaseOutCubic);" onTurnOn="$Parent.MoveToPosition(Touch, 0.3, EaseOutCubic);" style="Toggle"/><Label alignv="center" left="48" style="RightPanelText" text="Skirt" top="276"/><Panel name="Skirt" style="TopLeft" top="284"><Slider name="skirtLayers" min="0" max="20" precision="0" style="SliderClean" text="Skirt Layers" unit=" [-]" variable="Project.skirtLayers" onEndChanging="Lua.UpdateMaterialSetting(skirtLayers)" left="16" width="-32" top="0"/><Slider name="skirtOffset" min="0" max="20" precision="2" style="SliderClean" text="Skirt Offset" unit=" mm" variable="Project.skirtOffset" onEndChanging="Lua.UpdateMaterialSetting(skirtOffset)" left="16" width="-32" top="48"/><Slider name="skirtWidth" min="0.1" max="2.0" precision="1" style="SliderClean" text="Skirt Width" variable="Project.skirtWidth" onEndChanging="Lua.UpdateMaterialSetting(skirtWidth)" left="16" width="-32" top="96"/></Panel>-->
+        </Panel>
+        <!-- Infill Settings -->
+        <Panel name="InfillSettings" position="Collapsed" style="ForegroundPanel" visible="false">
+          <Position height="48" name="Collapsed" width="100%"/>
+          <Position height="392" name="Expanded" width="100%"/>
+          <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseMenu(InfillSettings)" onTurnOn="Lua.OpenMenu(InfillSettings)" style="RightPanelSectionToggle" text="Infill and Perimeter"/>
+          <Slider default="50" left="16" max="100" min="0" precision="0" style="SliderClean" text="Density" top="48" unit="%" variable="Project.Printer.InfillDensity" width="-32"/>
+          <Slider default="1" left="16" max="10" min="0.5" precision="1" style="SliderClean" text="Shell Thickness" top="96" unit="mm" variable="Project.Printer.ShellThickness" width="-32"/>
+          <Label left="16" style="RightPanelTitle" text="Infill Type:" top="160"/>
+          <ComboBox items="auto,gyroid,hatch" left="16" margins="0,8,0,0" name="infillType" onChange="Lua.UpdateMaterialSetting(infillType)" style="SmallComboButton" top="176" values="auto,gyroid,hatch" variable="Project.infillType" width="-32"/>
+          <Panel height="32" left="16" name="InfillBeforeWall" top="224" width="100%">
+            <Toggle centerv="50%" left="0" on="true" onTurnOff="Project.OverrideMaterialProperty(infillBeforeWall, false); " onTurnOn="Project.OverrideMaterialProperty(infillBeforeWall, true)" style="Toggle"/>
+            <Label alignv="center" left="32" style="RightPanelText" text="Infill before Wall" top="50%"/>
+          </Panel>
+          <Slider default="0.0" left="16" max="1.0" min="0.0" name="infillOverlap" onEndChanging="Lua.UpdateMaterialSetting(supportinfillOverlap)" precision="1" style="SliderClean" text="Infill Overlap" top="264" unit=" [-]" variable="Project.infillOverlap" width="-32"/>
+          <Label left="16" style="RightPanelTitle" text="Wall Order:" top="328"/>
+          <ComboBox items="auto,insideOut,outsideIn" left="16" margins="0,8,0,0" name="wallOrder" onChange="Lua.UpdateMaterialSetting(wallOrder)" style="SmallComboButton" top="344" values="auto,insideOut,outsideIn" variable="Project.wallOrder" width="-32"/>
+        </Panel>
+        <!-- Inspector -->
+        <Panel name="Inspector" onCreate="Lua.Initialize()" style="TopLeft,FullSize">
+          <Command name="OnNoModelSelected" script="None.Show();Single.Hide();Multiple.Hide();"/>
+          <Command name="OnSingleModelSelected" script="None.Hide();Single.Show();Multiple.Hide();"/>
+          <!-- the number of selected models is in $1 -->
+          <Command name="OnMultipleModelsSelected" script="None.Hide();Single.Hide();Multiple.Show();"/>
+          <!-- No Model Selected -->
+          <TextBox alignh="center" alignv="center" background="PanelBackground" name="None" style="RightPanelTitle,FullSize" text="No Model Selected" textColor="GRAY400"/>
+          <!-- Single Model Selected -->
+          <Grid cellBackground="PanelBackground" cellSpacing="2" columns="1" name="Single" stretchRow="-1" style="TopLeft,FullSize" visible="false">
+            <!-- Model Name & Copy / Delete Buttons -->
+            <Grid height="48" padding="8,0,8,0" rows="1" stretchColumn="1" style="ForegroundPanel" width="100%">
+              <TextBox padding="8,0,8,0" shortenToFit="filename" style="RightPanelTitle,FullSize" variable="$Selection.Name"/>
+              <Button centerv="50%" icon="IconDuplicate" onClick="Project.CopySelected()" style="IconButton"/>
+              <Button centerv="50%" icon="IconDelete" onClick="Project.DeleteSelected()" style="IconButton"/>
+            </Grid>
+            <!-- Layout -->
+            <Panel name="Layout" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="114" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(Layout)" onTurnOn="Lua.OpenInspectorMenu(Layout)" style="RightPanelSectionToggle" text="Layout" variable="Inspector.Layout"/>
+              <Grid bottom="0" cellSpacing="16" left="0" padding="16,16,16,16" rows="1" stretchColumn="-1" top="48" width="100%">
+                <EditBox label="X" precision="0" style="LabelEditBox" unit="mm" variable="Selection.Position.X" width="56"/>
+                <EditBox label="Y" precision="0" style="LabelEditBox" unit="mm" variable="Selection.Position.Y" width="56"/>
+                <Button onClick="Project.AutoLayoutAll()" style="SmallPrimaryButton" text="Automatic" width="100%"/>
+              </Grid>
+            </Panel>
+            <!-- Size and Scale -->
+            <Panel name="SizeAndScale" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="268" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(SizeAndScale)" onTurnOn="Lua.OpenInspectorMenu(SizeAndScale)" style="RightPanelSectionToggle" text="Size and Scale"/>
+              <Grid bottom="0" columns="1" left="16" right="16" top="48">
+                <Panel height="48" width="100%">
+                  <Toggle centerv="50%" left="0" name="ThickeningToggle" on="false" onTurnOff="$Parent.$Parent.ThicknessSlider.Disable()" onTurnOn="$Parent.$Parent.ThicknessSlider.Enable()" style="CheckBox" variable="Selection.Thickening"/>
+                  <Button alignh="left" alignv="center" left="24" onClick="$Parent.ThickeningToggle.Toggle()" padding="24,0,0,0" style="RightPanelText" text="Thickening" top="50%"/>
+                </Panel>
+                <Slider default="1" enabled="false" max="2" min="0" name="ThicknessSlider" precision="0" style="Slider" text="Thickness" values="Low,Medium,High" variable="Selection.Thickness" width="100%"/>
+                <Grid cellSpacing="16,32" columns="3" height="120" padding="0,8,0,0" width="100%">
+                  <EditBox label="X" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.X" width="72"/>
+                  <EditBox label="Y" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.Y" width="72"/>
+                  <EditBox label="Z" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.Z" width="72"/>
+                  <EditBox label="Scale" postfix="%" precision="0" step="25" style="LabelEditBox,Stepper" variable="Selection.Scale" width="72"/>
+                  <Button onClick="SetVariable(Selection.Scale, 100)" style="SmallPrimaryButton" text="Reset" width="72"/>
+                  <Button onClick="Project.ScaleToFit(true)" style="SmallPrimaryButton" text="Fit" width="72"/>
+                </Grid>
+              </Grid>
+            </Panel>
+            <!-- Orientation -->
+            <Panel name="Orientation" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="152" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(Orientation)" onTurnOn="Lua.OpenInspectorMenu(Orientation)" style="RightPanelSectionToggle" text="Orientation"/>
+              <Grid bottom="0" columns="1" left="16" padding="0,8,0,0" right="16" top="48">
+                <Grid cellSpacing="16,0" height="56" rows="1" width="100%">
+                  <EditBox label="X" postfix="°" precision="0" style="LabelEditBox" variable="Selection.Rotation.X" width="72"/>
+                  <EditBox label="Y" postfix="°" precision="0" style="LabelEditBox" variable="Selection.Rotation.Y" width="72"/>
+                  <EditBox label="Z" postfix="°" precision="0" style="LabelEditBox" variable="Selection.Rotation.Z" width="72"/>
+                </Grid>
+                <Grid cellSpacing="16,0" height="56" rows="1" width="100%">
+                  <ComboBox items="Auto Orientation,Adhesion,Low Orientation,Tall Orientation" style="SmallComboButton" values="auto,plane,low,tall" variable="Selection.Orientation" width="160"/>
+                </Grid>
+              </Grid>
+            </Panel>
+            <!-- Spacer -->
+            <Panel style="Spacer"/>
+          </Grid>
+          <!-- Multiple Models Selected -->
+          <Grid cellBackground="PanelBackground" cellSpacing="2" columns="1" name="Multiple" stretchRow="-1" style="TopLeft,FullSize" visible="false">
+            <!-- Number of Selected Models & Copy / Delete Buttons -->
+            <TextBox padding="16,0,0,0" style="RightPanelTitle" variable="$Selection.Name">
+              <Button centerv="50%" icon="IconDuplicate" onClick="Project.CopySelected()" right="40" style="IconButton"/>
+              <Button centerv="50%" icon="IconDelete" onClick="Project.DeleteSelected()" right="8" style="IconButton"/>
+            </TextBox>
+            <!-- Multiple Model Layout -->
+            <Panel name="Layout" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="114" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(Layout)" onTurnOn="Lua.OpenInspectorMenu(Layout)" style="RightPanelSectionToggle" text="Layout" variable="Inspector.Layout"/>
+              <Grid bottom="0" cellSpacing="16" left="0" padding="16,16,16,16" rows="1" stretchColumn="-1" top="48" width="100%">
+                <EditBox label="X" precision="0" style="LabelEditBox" unit="mm" variable="Selection.Position.X" width="56"/>
+                <EditBox label="Y" precision="0" style="LabelEditBox" unit="mm" variable="Selection.Position.Y" width="56"/>
+                <Button onClick="Project.AutoLayoutAll()" style="SmallPrimaryButton" text="Automatic" width="100%"/>
+              </Grid>
+            </Panel>
+            <!-- Multiple Model Size and Scale -->
+            <Panel name="SizeAndScale" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="268" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(SizeAndScale)" onTurnOn="Lua.OpenInspectorMenu(SizeAndScale)" style="RightPanelSectionToggle" text="Size and Scale"/>
+              <Grid bottom="0" columns="1" left="16" right="16" top="48">
+                <Panel height="48" width="100%">
+                  <Toggle centerv="50%" left="0" on="false" onTurnOff="$Parent.$Parent.ThicknessSlider.Disable()" onTurnOn="$Parent.$Parent.ThicknessSlider.Enable()" style="CheckBox" variable="Selection.Thickening"/>
+                  <Button alignh="left" alignv="center" left="24" onClick="$Parent.ThickeningToggle.Toggle()" padding="24,0,0,0" style="RightPanelText" text="Thickening" top="50%"/>
+                </Panel>
+                <Slider default="1" enabled="false" max="2" min="0" name="ThicknessSlider" precision="0" style="Slider" text="Thickness" values="Low,Medium,High" variable="Selection.Thickness" width="100%"/>
+                <Grid cellSpacing="16,32" columns="3" height="120" padding="0,8,0,0" width="100%">
+                  <EditBox label="X" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.X" width="72"/>
+                  <EditBox label="Y" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.Y" width="72"/>
+                  <EditBox label="Z" precision="1" style="LabelEditBox" unit="mm" variable="Selection.Size.Z" width="72"/>
+                  <EditBox label="Scale" postfix="%" precision="0" step="25" style="LabelEditBox,Stepper" variable="Selection.Scale" width="72"/>
+                  <Button onClick="SetVariable(Selection.Scale, 100)" style="SmallPrimaryButton" text="Reset" width="72"/>
+                  <Button onClick="Project.ScaleToFit(true)" style="SmallPrimaryButton" text="Fit" width="72"/>
+                </Grid>
+              </Grid>
+            </Panel>
+            <!-- Multiple Model Orientation -->
+            <Panel name="Orientation" position="Collapsed">
+              <Position height="48" name="Collapsed" width="100%"/>
+              <Position height="152" name="Expanded" width="100%"/>
+              <Toggle name="Toggle" on="false" onTurnOff="Lua.CloseInspectorMenu(Orientation)" onTurnOn="Lua.OpenInspectorMenu(Orientation)" style="RightPanelSectionToggle" text="Orientation"/>
+              <Grid bottom="0" columns="1" left="16" padding="0,8,0,0" right="16" top="48">
+                <Grid cellSpacing="16,0" height="56" rows="1" width="100%">
+                  <EditBox enabled="false" label="X" postfix="°" style="LabelEditBox" text="0" width="72"/>
+                  <EditBox enabled="false" label="Y" postfix="°" style="LabelEditBox" text="0" width="72"/>
+                  <EditBox label="Z" postfix="°" precision="0" style="LabelEditBox" variable="Selection.Rotation.Z" width="72"/>
+                </Grid>
+                <Grid cellSpacing="16,0" height="56" rows="1" width="100%">
+                  <ComboBox items="Auto Orientation,Adhesion,Low Orientation,Tall Orientation" style="SmallComboButton" values="auto,plane,low,tall" variable="Selection.Orientation" width="160"/>
+                  <Button enabled="false" style="SmallPrimaryButton" text="Manual" width="72"/>
+                </Grid>
+                <Button onClick="Project.AutoOrient(true)" style="SmallPrimaryButton" text="Auto Orientation" width="248"/>
+              </Grid>
+            </Panel>
+            <!-- Spacer -->
+            <Panel style="Spacer"/>
+          </Grid>
+        </Panel>
+      </Grid>
+      <ScrollBar name="ScrollBar" style="ScrollBarV"/>
+    </Panel>
+    <!-- Print Button -->
+    <Panel height="48" style="ForegroundPanel,BottomRight" width="0,280:280">
+      <Button name="PrintButton" onClick="Project.Print()" style="ActionButton,Centered" text="Save to G-Code File" width="-32"/>
+    </Panel>
+  </Panel>
+  <!-- we'll include modal dialogs last, to put them on top of everything else by default -->
+  <Include file="RepairModals.xml"/>
+  <Panel name="WhiteOut" style="ForegroundPanel" visible="false">
+    <Command name="Fade" script="Show();Hide(0.3)"/>
+  </Panel>
+</UI>
