@@ -93,3 +93,5 @@ function UpdateMaterialSetting(strProperty)
   local strValue = Hy.strGetVariable("Project." .. strProperty)
   Hy.ExecuteCommand("Project.OverrideMaterialProperty", strProperty, strValue)
 end
+
+-- I am not sure on how lua does its comments
