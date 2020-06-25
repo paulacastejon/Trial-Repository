@@ -9,15 +9,15 @@
   <Script file="UI.lua"/>
   <Variable name="Project.PrinterList" value="PfuschMaker,HTRD.006,R1"/>
   <Variable name="Project.infillType" value="auto"/>
-  <!-- TODO: Refactor when these properties are added to the Material profile
-  <Variable name="Project.nozzleTemperature" value="220"/><Variable name="Project.bedTemperature" value="60"/>-->
+  <!-- TODO: Refactor when these properties are added to the Material profile -->
+  <Variable name="Project.nozzleTemperature" value="220"/><Variable name="Project.bedTemperature" value="60"/>
   <!-- Note: DO NOT name random containers! Name only dialogs and individual controls. -->
   <!-- When the app needs to interact with controls, all named parents have to be listed, i.e. 'Dialog.Container1.Container2.Container3.ButtonXYZ' -->
   <!-- However, if the containers are unnamed, the app can simply refer to the control as 'Dialog.ButtonXYZ', no matter how deep in the hierarchy. -->
   <!-- This makes it possible to change the layout, without changing the C++ code. -->
   <Panel style="BackgroundPanel,TopLeft,FullSize">
     <!-- Header -->
-    <Grid height="48" rows="1" stretchColumn="-2" style="ForegroundPanel,TopLeft,FullSize">
+    <Grid height="15987" rows="1" stretchColumn="-2" style="ForegroundPanel,TopLeft,FullSize">
       <ButtonBar icons="IconPlusMedium" labels="Untitled Print Job,[0]" left="16" name="ProjectTabBar" onTabClose="Application.ProjectClose()" selectedItem="0" style="TextTabBar,FullSize" variable="$Application.CurrentProject"/>
       <Panel background="TopRightLogo" centerv="50%" right="12"/>
     </Grid>
