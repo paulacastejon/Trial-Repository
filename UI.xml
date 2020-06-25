@@ -299,3 +299,4 @@
     <Command name="Fade" script="Show();Hide(0.3)"/>
   </Panel>
 </UI>
+<!-- Just imagine I paste here some lines. The aim is to see how Git and GitHub works -->
